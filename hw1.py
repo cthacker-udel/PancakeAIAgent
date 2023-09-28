@@ -109,7 +109,7 @@ class PancakeState:
     Represents a node in the state graph
     """
 
-    def __init__(self: PancakeState, pancakes: List[Pancake]):
+    def __init__(self: PancakeState, pancakes: List[Pancake], is_astar: bool = False):
         """
         Initializes the PancakeState, setting it's fields such as the array of pancakes in the state itself (the node within a state, which contains all the pancakes),
         and whether the node has been explored ("expanded")
@@ -117,14 +117,16 @@ class PancakeState:
         Args:
             self (PancakeState): The internal state, used for mutation
             pancakes (List[Pancake]): The list of pancakes to initialize the pancakes array as
+            is_astar (bool): Whether the node is utilizing the astar algorithm. Defaults to False
         """
         self.pancakes = pancakes
         self.num_pancakes = len(pancakes)
         self.explored = False
         self.parent: Optional[PancakeState] = None
         self.flipped = 0
-        self.cost = 0
-        self.heuristic = float('-inf')
+        self.cost: int = 0
+        self.heuristic: int = 0
+        self.is_astar = is_astar
 
     def clone(self: PancakeState) -> PancakeState:
         """
@@ -136,7 +138,8 @@ class PancakeState:
         Returns:
             PancakeState: The cloned state, a new instance of the PancakeState class
         """
-        cloned = PancakeState([x.clone() for x in self.pancakes])
+        cloned = PancakeState([x.clone()
+                              for x in self.pancakes], self.is_astar)
         cloned.num_pancakes = len(self.pancakes)
         cloned.explored = False
         cloned.flipped = self.flipped
@@ -183,15 +186,18 @@ class PancakeState:
         Returns:
             PancakeState: The mutated & cloned state
         """
-        self.heuristic = self.compute_heuristic()
-        self.cost = flip_index
         cloned_state = self.clone()
+        cloned_state.cost = flip_index + self.cost
+        # print('flip index = ', flip_index, self.cost, cloned_state.cost)
         cloned_state.flipped = flip_index
         flipped_part = cloned_state.pancakes[0:flip_index][::-1]
         base_part = cloned_state.pancakes[flip_index:]
         cloned_state.pancakes = flipped_part + base_part
         for i in range(0, flip_index):
             cloned_state.pancakes[i].flip()
+
+        if not cloned_state.explored:
+            cloned_state.heuristic = cloned_state.compute_heuristic()
 
         return cloned_state
 
@@ -222,13 +228,22 @@ class PancakeState:
         Returns:
             str: The stringified version of the state
         """
-        if self.flipped == 0:
-            return ''.join([f'{x.size}{"b" if x.burnt else "w"}' for x in self.pancakes])
-        else:
+        if not self.is_astar:
+            if self.flipped == 0:
+                return ''.join([f'{x.size}{"b" if x.burnt else "w"}' for x in self.pancakes])
             steps = [
                 f'{x.size}{"b" if x.burnt else "w"}' for x in self.pancakes]
             steps.insert(self.flipped, '|')
             return ''.join(steps)
+
+        #########################
+        # A* STR REPRESENTATION
+        #########################
+        steps = [
+            f'{x.size}{"b" if x.burnt else "w"}' for x in self.pancakes]
+        steps.insert(self.flipped, '|')
+        joined_step = ''.join(steps)
+        return joined_step + f' g:{self.cost}, h:{self.heuristic}'
 
 
 class StateGraph:
@@ -283,7 +298,22 @@ class StateGraph:
             return self.dfs_algorithm()
         else:
             # A*
-            return None
+            return self.astar_algorithm()
+
+    def order_nodes_by_astar_fn(self: StateGraph, state: List[PancakeState]) -> List[PancakeState]:
+        """
+        Orders the nodes according to the value set on them by the A* algorithm, which is f(n) = g(n) + h(n)
+            - g(n) being the cost of the path
+            - h(n) being the heuristic value
+
+        Args:
+            self (StateGraph): The internal state
+            state (List[PancakeState]): The list of states (nodes) we have to order
+
+        Returns:
+            List[PancakeState]: The list of ordered nodes according to the A* algorithm
+        """
+        return sorted([x.clone() for x in state], key=lambda x: x.cost + x.heuristic)
 
     def bfs_algorithm(self: StateGraph) -> PancakeState:
         """
@@ -345,6 +375,38 @@ class StateGraph:
                     each_node.explore()
         return self.root_state
 
+    def astar_algorithm(self: StateGraph) -> PancakeState:
+        """
+        Runs the A* algorithm on the internal state graph that was initialized in the constructor
+
+        Args:
+            self (StateGraph): The internal state graph
+
+        Returns:
+            PancakeState: The state node that corresponds to the solved problem
+        """
+        astar_queue: List[PancakeState] = []
+        self.root_state.explore()
+        explored_states: Set[str] = set([str(self.root_state)])
+        astar_queue.append(self.root_state)
+        while len(astar_queue) > 0:
+            parent_state = astar_queue.pop(0)
+            if self.is_goal(parent_state):
+                return parent_state
+
+            # inspect why the algorithm may be choosing the wrong node
+            expansion_nodes = parent_state.generate_possible_moves()
+            ordered_nodes = self.order_nodes_by_astar_fn(expansion_nodes)
+            for each_node in ordered_nodes:
+                if not each_node.explored and not str(each_node) in explored_states:
+                    each_node.explore()
+                    explored_states.add(str(each_node))
+                    each_node.parent = parent_state
+                    astar_queue.append(each_node)
+                else:
+                    each_node.explore()
+        return self.root_state
+
 
 class PancakeFlippingSolver:
     """
@@ -368,7 +430,7 @@ class PancakeFlippingSolver:
         # SETTING STATE GRAPH
         #########################
         self.state_graph = StateGraph(PancakeState(
-            parsed_pancakes), available_algorithms[algorithm])
+            parsed_pancakes,  available_algorithms[algorithm] == Algorithm.A_STAR), available_algorithms[algorithm])
         self.stringified_steps = ''
 
     def run_algorithm(self: PancakeFlippingSolver) -> PancakeState | None:
