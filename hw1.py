@@ -288,7 +288,6 @@ class StateGraph:
                         bfs_queue.append(each_node)
                     else:
                         each_node.explore()
-        # todo
         return self.root_state
 
 
@@ -307,7 +306,7 @@ class PancakeFlippingSolver:
                 Pancake(int(pancake_string[i]), pancake_string[i + 1].lower() == 'b'))
         if algorithm not in available_algorithms:
             raise ValueError(
-                f"Invalid algorithm specified, only options are {','.join([x for x in available_algorithms.keys()])}")
+                f"Invalid algorithm specified, only options are {','.join(list(x for x in available_algorithms))}")
         self.algorithm: Algorithm = available_algorithms[algorithm]
 
         #########################
