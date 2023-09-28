@@ -123,6 +123,8 @@ class PancakeState:
         self.explored = False
         self.parent: Optional[PancakeState] = None
         self.flipped = 0
+        self.cost = 0
+        self.heuristic = float('-inf')
 
     def clone(self: PancakeState) -> PancakeState:
         """
@@ -138,6 +140,8 @@ class PancakeState:
         cloned.num_pancakes = len(self.pancakes)
         cloned.explored = False
         cloned.flipped = self.flipped
+        cloned.cost = self.cost
+        cloned.heuristic = self.heuristic
         return cloned
 
     def explore(self: PancakeState) -> None:
@@ -148,6 +152,24 @@ class PancakeState:
             self (PancakeState): The internal states
         """
         self.explored = True
+
+    def compute_heuristic(self: PancakeState) -> int:
+        """
+        Computes the heuristic value of the pancakes, which is the largest pancake that is out of place
+
+        Args:
+            self (PancakeState): The internal state of the pancakes
+
+        Returns:
+            int: The heuristic value
+        """
+        goal_order = [x + 1 for x in range(len(self.pancakes))]
+        pancake_out_of_order = 0
+        for ind, each_pancake in enumerate(self.pancakes):
+            if goal_order[ind] != each_pancake.size:
+                pancake_out_of_order = max(
+                    pancake_out_of_order, each_pancake.size)
+        return pancake_out_of_order
 
     def flip(self: PancakeState, flip_index: int) -> PancakeState:
         """
@@ -161,6 +183,8 @@ class PancakeState:
         Returns:
             PancakeState: The mutated & cloned state
         """
+        self.heuristic = self.compute_heuristic()
+        self.cost = flip_index
         cloned_state = self.clone()
         cloned_state.flipped = flip_index
         flipped_part = cloned_state.pancakes[0:flip_index][::-1]
@@ -354,8 +378,14 @@ class PancakeFlippingSolver:
         Args:
             self (PancakeFlippingSolver): The internal instance
         """
+        #######################
+        # RUNNING ALGORITHM
+        #######################
         steps = self.state_graph.search_for_goal()
         if steps is not None:
+            #########################
+            # STRINGIFYING STEPS
+            #########################
             self.stringified_steps = self.stringify_steps(steps)
             return steps
         return None
