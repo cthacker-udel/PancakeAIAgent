@@ -256,14 +256,14 @@ class StateGraph:
         if self.algorithm == Algorithm.BFS:
             return self.bfs_algorithm()
         elif self.algorithm == Algorithm.DFS:
-            return None
+            return self.dfs_algorithm()
         else:
             # A*
             return None
 
     def bfs_algorithm(self: StateGraph) -> PancakeState:
         """
-        Runs the BFS algorithm on the internal state graph that was initialized in the constructor
+        Runs the BFS algorithm (FIFO) on the internal state graph that was initialized in the constructor
 
         Args:
             self (StateGraph): The internal state graph instance
@@ -277,6 +277,36 @@ class StateGraph:
         bfs_queue.append(self.root_state)
         while len(bfs_queue) > 0:
             parent_state = bfs_queue.pop(0)
+            if self.is_goal(parent_state):
+                return parent_state
+
+            expansion_nodes = parent_state.generate_possible_moves()
+            for each_node in expansion_nodes:
+                if not each_node.explored and not str(each_node) in explored_states:
+                    each_node.explore()
+                    explored_states.add(str(each_node))
+                    each_node.parent = parent_state
+                    bfs_queue.append(each_node)
+                else:
+                    each_node.explore()
+        return self.root_state
+
+    def dfs_algorithm(self: StateGraph) -> PancakeState:
+        """
+        Runs the DFS algorithm (LIFO) on the internal state graph that was initialized in the constructor
+
+        Args:
+            self (StateGraph): The internal state graph instance
+
+        Returns:
+            PancakeState: The state node that corresponds to the solved problem
+        """
+        bfs_queue: List[PancakeState] = []
+        self.root_state.explore()
+        explored_states: Set[str] = set([str(self.root_state)])
+        bfs_queue.append(self.root_state)
+        while len(bfs_queue) > 0:
+            parent_state = bfs_queue.pop()
             if self.is_goal(parent_state):
                 return parent_state
 
