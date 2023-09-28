@@ -181,7 +181,7 @@ class PancakeState:
             List[PancakeState]: The list of potential moves the user can make
         """
         potential_moves: List[PancakeState] = []
-        for i in range(1, len(self.pancakes)):
+        for i in range(1, len(self.pancakes) + 1):
             potential_moves.append(self.flip(i))
 
         return potential_moves
@@ -275,7 +275,7 @@ class StateGraph:
         explored_states: Set[str] = set([str(self.root_state)])
         bfs_queue.append(self.root_state)
         while len(bfs_queue) > 0:
-            parent_state = bfs_queue.pop()
+            parent_state = bfs_queue.pop(0)
             if self.is_goal(parent_state):
                 return parent_state
             else:
@@ -361,6 +361,7 @@ def main(run_input: bool = False):
     else:
         tester = TestCase()
         for each_test_case in test_cases:
+            print(f'\n--------- TESTING {each_test_case[0]} ---------\n')
             [pancakes, algo] = each_test_case[0].split('-')
             solver = PancakeFlippingSolver(algo, pancakes)
             last_step = solver.run_algorithm()
