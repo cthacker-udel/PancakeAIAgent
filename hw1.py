@@ -157,6 +157,7 @@ class PancakeState:
         cloned.flipped = self.flipped
         cloned.cost = self.cost
         cloned.heuristic = self.heuristic
+        cloned.parent = self.parent
         return cloned
 
     def explore(self: PancakeState) -> None:
@@ -228,7 +229,7 @@ class PancakeState:
         for i in range(1, len(self.pancakes) + 1):
             flipped_instance = self.flip(i)
             if parent is not None:
-                flipped_instance.parent = parent
+                flipped_instance.parent = parent.clone()
             potential_moves.append(flipped_instance)
 
         return potential_moves
@@ -330,6 +331,18 @@ class StateGraph:
         # A*
         return self.astar_algorithm()
 
+    def generate_tiebreaker_str(self: StateGraph, state: PancakeState) -> int:
+        """
+
+        Args:
+            self (StateGraph): _description_
+            state (PancakeState): _description_
+
+        Returns:
+            str: _description_
+        """
+        return int(state.astar_dict_key().replace('|', '').replace('w', '1').replace('b', '0'))
+
     def order_nodes_by_astar_fn(self: StateGraph, state: List[PancakeState]) -> List[PancakeState]:
         """
         Orders the nodes according to the value set on them by the A* algorithm, which is f(n) = g(n) + h(n)
@@ -343,7 +356,7 @@ class StateGraph:
         Returns:
             List[PancakeState]: The list of ordered nodes according to the A* algorithm
         """
-        return sorted([x.clone() for x in state], key=lambda x: x.cost + x.heuristic)
+        return sorted([x.clone() for x in state], key=lambda x: (x.cost + x.heuristic, self.generate_tiebreaker_str(x)))
 
     def bfs_algorithm(self: StateGraph) -> PancakeState:
         """
@@ -385,40 +398,34 @@ class StateGraph:
         Returns:
             PancakeState: The state node that corresponds to the solved problem
         """
-
-        def tie_breaker(base_state: PancakeState, incoming_state: PancakeState) -> bool:
-            return int(base_state.astar_dict_key().replace('|', '').replace('w', '1').replace('b', '0')) > int(incoming_state.astar_dict_key().replace('|', '').replace('w', '1').replace('b', '0'))
-
-        explored_states: Set[str] = set(
-            [str(self.root_state.astar_dict_key())])
-
-        astar_fringe = []
+        astar_queue = []
         self.root_state.explore()
-        parent_state = self.root_state
-        parent_ind = -1
-        astar_fringe = parent_state.generate_possible_moves(parent_state)
-        # Stop when we dequeue a goal, does that mean implement queue FIFO structure?
-        while not self.is_goal(parent_state):
-            min_node_cost = min(x.astar_cost() for x in astar_fringe)
+        explored_states: Set[str] = set([self.root_state.astar_dict_key()])
+        astar_queue.append(self.root_state)
+        while len(astar_queue) > 0:
+            parent_state: PancakeState = astar_queue.pop(0)  # dequeue
+            if self.is_goal(parent_state):
+                return parent_state
 
-            for ind, each_node in enumerate(astar_fringe):
-                if each_node.astar_cost() == min_node_cost:
-                    if parent_ind != -1 and tie_breaker(parent_state, each_node):
-                        continue
-                    parent_state = each_node
-                    parent_ind = ind
-            if parent_state.astar_dict_key() not in explored_states:
-                explored_states.add(parent_state.astar_dict_key())
-                parent_state.explore()
-                astar_fringe.pop(parent_ind)
-                astar_fringe.extend(
-                    parent_state.generate_possible_moves(parent_state))
-            else:
-                astar_fringe.pop(parent_ind)
+            # inspect why the algorithm may be choosing the wrong node
+            expansion_nodes = parent_state.generate_possible_moves(
+                parent_state)
 
-            parent_ind = -1
+            astar_queue.extend(expansion_nodes)
 
-        return parent_state
+            ordered_nodes = self.order_nodes_by_astar_fn(
+                astar_queue)
+
+            print(len(ordered_nodes))
+            # clear out already explored mins
+            while ordered_nodes[0].explored or ordered_nodes[0].astar_dict_key() in explored_states:
+                ordered_nodes.pop(0)
+
+            ordered_nodes[0].explore()
+            explored_states.add(ordered_nodes[0].astar_dict_key())
+            astar_queue.insert(0, ordered_nodes[0])
+
+        return self.root_state
 
 
 class PancakeFlippingSolver:
