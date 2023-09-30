@@ -275,7 +275,9 @@ class PancakeState:
         #########################
         steps = [
             f'{x.size}{"b" if x.burnt else "w"}' for x in self.pancakes]
-        steps.insert(self.flipped, '|')
+
+        if self.flipped != 0:
+            steps.insert(self.flipped, '|')
         joined_step = ''.join(steps)
         return joined_step + f' g:{self.cost}, h:{self.heuristic}'
 
@@ -477,6 +479,33 @@ class PancakeFlippingSolver:
             return steps
         return None
 
+    def stringify_astar_steps(self: PancakeFlippingSolver, state: PancakeState | None) -> str:
+        """
+        Stringifies all steps made in the A* process
+
+        Args:
+            self (PancakeFlippingSolver): _description_
+            state (PancakeState | None): _description_
+
+        Returns:
+            str: _description_
+        """
+        if state is None:
+            return ''
+
+        steps: List[PancakeState] = []
+        while state is not None:
+            steps.append(state.clone(state.is_astar))
+            state = state.parent
+
+        pushed_flipped = [0] + [x.flipped for x in steps]
+
+        for ind, element in enumerate(steps):
+            element.flipped = pushed_flipped[ind]
+
+        reversed_steps = steps[::-1]
+        return '\n'.join([str(x) for x in reversed_steps])
+
     def stringify_steps(self: PancakeFlippingSolver, state: PancakeState | None) -> str:
         """
         Stringifies all the steps made in the algorithmic process
@@ -519,8 +548,12 @@ def main(run_input: bool = False):
         [pancakes, algo] = pancake_order.split('-')
         solver = PancakeFlippingSolver(algo, pancakes)
         last_step = solver.run_algorithm()
-        steps = solver.stringify_steps(last_step)
-        print(steps)
+        if solver.algorithm != Algorithm.A_STAR:
+            steps = solver.stringify_steps(last_step)
+            print(steps)
+        else:
+            steps = solver.stringify_astar_steps(last_step)
+            print(steps)
     else:
         tester = TestCase()
         for each_test_case in test_cases:
@@ -528,7 +561,12 @@ def main(run_input: bool = False):
             [pancakes, algo] = each_test_case[0].split('-')
             solver = PancakeFlippingSolver(algo, pancakes)
             last_step = solver.run_algorithm()
-            steps = solver.stringify_steps(last_step)
+            steps = ''
+
+            if solver.algorithm != Algorithm.A_STAR:
+                steps = solver.stringify_steps(last_step)
+            else:
+                steps = solver.stringify_astar_steps(last_step)
             print('steps = \n', steps)
             tester.assertEqual(steps, each_test_case[1])
             print(
