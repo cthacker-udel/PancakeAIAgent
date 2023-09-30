@@ -13,11 +13,9 @@ TODO: Finish These
 
 """
 
-from __future__ import annotations
 from typing import List, Optional, Set
 from enum import Enum
 from unittest import TestCase
-from sys import maxsize
 
 #############################
 # TEST CASES
@@ -47,8 +45,9 @@ class Algorithm(Enum):
 ################################
 # ALL AVAILABLE ALGORITHMS
 ################################
-available_algorithms: dict[str, Algorithm] = {
+available_algorithms = {
     'b': Algorithm.BFS,
+    'd': Algorithm.DFS,
     'a': Algorithm.A_STAR
 }
 
@@ -58,7 +57,7 @@ class Pancake:
     Represents a single pancake in the pancake problem
     """
 
-    def __init__(self: Pancake, size: int, burnt: bool) -> None:
+    def __init__(self, size: int, burnt: bool) -> None:
         """
         Initializes the pancake, setting it's size, and whether it was burned
 
@@ -70,7 +69,7 @@ class Pancake:
         self.size = size
         self.burnt = burnt
 
-    def flip(self: Pancake) -> None:
+    def flip(self) -> None:
         """
         Flips the pancake, setting it's `burnt` member to the opposite of what it is (burnt --> white, white --> burnt)
 
@@ -79,7 +78,7 @@ class Pancake:
         """
         self.burnt = not self.burnt
 
-    def clone(self: Pancake) -> Pancake:
+    def clone(self):
         """
         Clones the pancake class, avoiding accidental mutation
 
@@ -91,7 +90,7 @@ class Pancake:
         """
         return Pancake(self.size, self.burnt)
 
-    def __str__(self: Pancake) -> str:
+    def __str__(self) -> str:
         """
         A stringified version of the Pancake
 
@@ -109,7 +108,7 @@ class PancakeState:
     Represents a node in the state graph
     """
 
-    def __init__(self: PancakeState, pancakes: List[Pancake], is_astar: bool = False):
+    def __init__(self, pancakes, is_astar=False):
         """
         Initializes the PancakeState, setting it's fields such as the array of pancakes in the state itself (the node within a state, which contains all the pancakes),
         and whether the node has been explored ("expanded")
@@ -128,19 +127,7 @@ class PancakeState:
         self.heuristic: int = 0
         self.is_astar = is_astar
 
-    def astar_cost(self: PancakeState) -> int:
-        """
-        Returns the A* cost of the node (the backwards cost g(n) and the heuristic cost h(n))
-
-        Args:
-            self (PancakeState): The internal state
-
-        Returns:
-            int: The cost + the heuristic cost, which is what A* looks at
-        """
-        return self.cost + self.heuristic
-
-    def clone(self: PancakeState) -> PancakeState:
+    def clone(self):
         """
         Deep clones the state, allowing for no accidental mutation to take place
 
@@ -159,7 +146,7 @@ class PancakeState:
         cloned.heuristic = self.heuristic
         return cloned
 
-    def explore(self: PancakeState) -> None:
+    def explore(self) -> None:
         """
         Marks the node as explored
 
@@ -168,7 +155,7 @@ class PancakeState:
         """
         self.explored = True
 
-    def compute_heuristic(self: PancakeState) -> int:
+    def compute_heuristic(self) -> int:
         """
         Computes the heuristic value of the pancakes, which is the largest pancake that is out of place
 
@@ -186,7 +173,7 @@ class PancakeState:
                     pancake_out_of_order, each_pancake.size)
         return pancake_out_of_order
 
-    def flip(self: PancakeState, flip_index: int) -> PancakeState:
+    def flip(self, flip_index: int):
         """
         Executes when the user decides to flip the pancakes, effectively clones all the classes, mutates their members, and returns
         the cloned state
@@ -213,43 +200,23 @@ class PancakeState:
 
         return cloned_state
 
-    def generate_possible_moves(self: PancakeState, parent: Optional[PancakeState] = None) -> List[PancakeState]:
+    def generate_possible_moves(self):
         """
         Generates all possible moves that could be made, aka all the possible flips the user can make on the state
 
         Args:
             self (PancakeState): The internal state
-            parent (PancakeState): The parent instance, used for short-cutting an extra for loop
 
         Returns:
             List[PancakeState]: The list of potential moves the user can make
         """
-        potential_moves: List[PancakeState] = []
+        potential_moves = []
         for i in range(1, len(self.pancakes) + 1):
-            flipped_instance = self.flip(i)
-            if parent is not None:
-                flipped_instance.parent = parent
-            potential_moves.append(flipped_instance)
+            potential_moves.append(self.flip(i))
 
         return potential_moves
 
-    def astar_dict_key(self: PancakeState) -> str:
-        """
-        Generates a key for the astar algorithm dictionary. `<state>` without the `g: h:` suffix
-
-        Args:
-            self (PancakeState): The representation of the pancake state
-
-        Returns:
-            str: The stringified version of the node, without the astar suffix on the string
-        """
-        if self.flipped == 0:
-            return ''.join([f'{x.size}{"b" if x.burnt else "w"}' for x in self.pancakes])
-        steps = [f'{x.size}{"b" if x.burnt else "w"}' for x in self.pancakes]
-        steps.insert(self.flipped, '|')
-        return ''.join(steps)
-
-    def __str__(self: PancakeState) -> str:
+    def __str__(self) -> str:
         """
         Converts the pancake state into a stringified version of it, which is used in the submission, and generally for a better representation
         then a memory address
@@ -283,7 +250,7 @@ class StateGraph:
     Represents the graph of the state of the pancake problem
     """
 
-    def __init__(self: StateGraph, state: PancakeState, algorithm: Algorithm) -> None:
+    def __init__(self, state, algorithm) -> None:
         """
         Initializes the state graph with the supplied state, and the supplied algorithm
 
@@ -292,11 +259,11 @@ class StateGraph:
             state (PancakeState): The state to initialize as the root node in this graph
             algorithm (Algorithm): The algorithm to execute with this graph
         """
-        self.root_state: PancakeState = state
+        self.root_state = state
         self.moves: List[StateGraph] = []
         self.algorithm = algorithm
 
-    def is_goal(self: StateGraph, state: PancakeState) -> bool:
+    def is_goal(self, state) -> bool:
         """
         Whether the state corresponds to the goal state
 
@@ -314,7 +281,7 @@ class StateGraph:
             [not x.burnt for x in state_pancakes])
         return are_pancakes_burnt_sides_down and are_pancakes_descending
 
-    def search_for_goal(self: StateGraph) -> PancakeState | None:
+    def search_for_goal(self):
         """
         Basically manages which algorithm to execute, if the algorithm supplied is 'b', then execute BFS, and so on.
 
@@ -326,11 +293,13 @@ class StateGraph:
         """
         if self.algorithm == Algorithm.BFS:
             return self.bfs_algorithm()
+        elif self.algorithm == Algorithm.DFS:
+            return self.dfs_algorithm()
+        else:
+            # A*
+            return self.astar_algorithm()
 
-        # A*
-        return self.astar_algorithm()
-
-    def order_nodes_by_astar_fn(self: StateGraph, state: List[PancakeState]) -> List[PancakeState]:
+    def order_nodes_by_astar_fn(self, state):
         """
         Orders the nodes according to the value set on them by the A* algorithm, which is f(n) = g(n) + h(n)
             - g(n) being the cost of the path
@@ -345,7 +314,7 @@ class StateGraph:
         """
         return sorted([x.clone() for x in state], key=lambda x: x.cost + x.heuristic)
 
-    def bfs_algorithm(self: StateGraph) -> PancakeState:
+    def bfs_algorithm(self):
         """
         Runs the BFS algorithm (FIFO) on the internal state graph that was initialized in the constructor
 
@@ -355,7 +324,7 @@ class StateGraph:
         Returns:
             PancakeState: The state node that corresponds to the solved problem
         """
-        bfs_queue: List[PancakeState] = []
+        bfs_queue = []
         self.root_state.explore()
         explored_states: Set[str] = set([str(self.root_state)])
         bfs_queue.append(self.root_state)
@@ -375,7 +344,37 @@ class StateGraph:
                     each_node.explore()
         return self.root_state
 
-    def astar_algorithm(self: StateGraph) -> PancakeState:
+    def dfs_algorithm(self):
+        """
+        Runs the DFS algorithm (LIFO) on the internal state graph that was initialized in the constructor
+
+        Args:
+            self (StateGraph): The internal state graph instance
+
+        Returns:
+            PancakeState: The state node that corresponds to the solved problem
+        """
+        bfs_queue = []
+        self.root_state.explore()
+        explored_states: Set[str] = set([str(self.root_state)])
+        bfs_queue.append(self.root_state)
+        while len(bfs_queue) > 0:
+            parent_state = bfs_queue.pop()
+            if self.is_goal(parent_state):
+                return parent_state
+
+            expansion_nodes = parent_state.generate_possible_moves()
+            for each_node in expansion_nodes:
+                if not each_node.explored and not str(each_node) in explored_states:
+                    each_node.explore()
+                    explored_states.add(str(each_node))
+                    each_node.parent = parent_state
+                    bfs_queue.append(each_node)
+                else:
+                    each_node.explore()
+        return self.root_state
+
+    def astar_algorithm(self):
         """
         Runs the A* algorithm on the internal state graph that was initialized in the constructor
 
@@ -385,40 +384,27 @@ class StateGraph:
         Returns:
             PancakeState: The state node that corresponds to the solved problem
         """
-
-        def tie_breaker(base_state: PancakeState, incoming_state: PancakeState) -> bool:
-            return int(base_state.astar_dict_key().replace('|', '').replace('w', '1').replace('b', '0')) > int(incoming_state.astar_dict_key().replace('|', '').replace('w', '1').replace('b', '0'))
-
-        explored_states: Set[str] = set(
-            [str(self.root_state.astar_dict_key())])
-
-        astar_fringe = []
+        astar_queue = []
         self.root_state.explore()
-        parent_state = self.root_state
-        parent_ind = -1
-        astar_fringe = parent_state.generate_possible_moves(parent_state)
-        # Stop when we dequeue a goal, does that mean implement queue FIFO structure?
-        while not self.is_goal(parent_state):
-            min_node_cost = min(x.astar_cost() for x in astar_fringe)
+        explored_states: Set[str] = set([str(self.root_state)])
+        astar_queue.append(self.root_state)
+        while len(astar_queue) > 0:
+            parent_state = astar_queue.pop(0)
+            if self.is_goal(parent_state):
+                return parent_state
 
-            for ind, each_node in enumerate(astar_fringe):
-                if each_node.astar_cost() == min_node_cost:
-                    if parent_ind != -1 and tie_breaker(parent_state, each_node):
-                        continue
-                    parent_state = each_node
-                    parent_ind = ind
-            if parent_state.astar_dict_key() not in explored_states:
-                explored_states.add(parent_state.astar_dict_key())
-                parent_state.explore()
-                astar_fringe.pop(parent_ind)
-                astar_fringe.extend(
-                    parent_state.generate_possible_moves(parent_state))
-            else:
-                astar_fringe.pop(parent_ind)
-
-            parent_ind = -1
-
-        return parent_state
+            # inspect why the algorithm may be choosing the wrong node
+            expansion_nodes = parent_state.generate_possible_moves()
+            ordered_nodes = self.order_nodes_by_astar_fn(expansion_nodes)
+            for each_node in ordered_nodes:
+                if not each_node.explored and not str(each_node) in explored_states:
+                    each_node.explore()
+                    explored_states.add(str(each_node))
+                    each_node.parent = parent_state
+                    astar_queue.append(each_node)
+                else:
+                    each_node.explore()
+        return self.root_state
 
 
 class PancakeFlippingSolver:
@@ -426,7 +412,7 @@ class PancakeFlippingSolver:
     Solver for all algorithms relating to the pancake flipping problem
     """
 
-    def __init__(self: PancakeFlippingSolver, algorithm: str, pancake_string: str) -> None:
+    def __init__(self, algorithm: str, pancake_string: str) -> None:
         ########################
         # PARSING INPUT
         ########################
@@ -444,13 +430,9 @@ class PancakeFlippingSolver:
         #########################
         self.state_graph = StateGraph(PancakeState(
             parsed_pancakes,  available_algorithms[algorithm] == Algorithm.A_STAR), available_algorithms[algorithm])
-
-        #########################
-        # SETTING STEPS VARIABLE
-        #########################
         self.stringified_steps = ''
 
-    def run_algorithm(self: PancakeFlippingSolver) -> PancakeState | None:
+    def run_algorithm(self):
         """
             Runs the specified algorithm supplied in the constructor
 
@@ -469,7 +451,7 @@ class PancakeFlippingSolver:
             return steps
         return None
 
-    def stringify_steps(self: PancakeFlippingSolver, state: PancakeState | None) -> str:
+    def stringify_steps(self, state) -> str:
         """
         Stringifies all the steps made in the algorithmic process
 
@@ -483,7 +465,7 @@ class PancakeFlippingSolver:
         if state is None:
             return ''
 
-        steps: List[PancakeState] = []
+        steps = []
         while state is not None:
             steps.append(state.clone())
             state = state.parent
@@ -499,7 +481,7 @@ class PancakeFlippingSolver:
         return '\n'.join(stringified_cloned_steps)
 
 
-def main(run_input: bool = False):
+def main(run_input=True):
     """
     The main loop, allows for unit testing and taking in raw input and processing its
 
@@ -521,7 +503,6 @@ def main(run_input: bool = False):
             solver = PancakeFlippingSolver(algo, pancakes)
             last_step = solver.run_algorithm()
             steps = solver.stringify_steps(last_step)
-            print('steps = \n', steps)
             tester.assertEqual(steps, each_test_case[1])
             print(
                 f'--------- {each_test_case[0]} PASSED ---------\n')
