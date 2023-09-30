@@ -140,12 +140,13 @@ class PancakeState:
         """
         return self.cost + self.heuristic
 
-    def clone(self: PancakeState) -> PancakeState:
+    def clone(self: PancakeState, explored_override: bool = False) -> PancakeState:
         """
         Deep clones the state, allowing for no accidental mutation to take place
 
         Args:
             self (PancakeState): The internal state
+            explored_override (bool): The override for the explored criteria (which affects final stringification of steps ONLY in A* implementation)
 
         Returns:
             PancakeState: The cloned state, a new instance of the PancakeState class
@@ -153,7 +154,7 @@ class PancakeState:
         cloned = PancakeState([x.clone()
                               for x in self.pancakes], self.is_astar)
         cloned.num_pancakes = len(self.pancakes)
-        cloned.explored = False
+        cloned.explored = explored_override
         cloned.flipped = self.flipped
         cloned.cost = self.cost
         cloned.heuristic = self.heuristic
@@ -229,7 +230,7 @@ class PancakeState:
         for i in range(1, len(self.pancakes) + 1):
             flipped_instance = self.flip(i)
             if parent is not None:
-                flipped_instance.parent = parent.clone()
+                flipped_instance.parent = parent
             potential_moves.append(flipped_instance)
 
         return potential_moves
