@@ -26,7 +26,8 @@ test_cases = [
     ["1w2b3b4w-b", "1w2b|3b4w\n2w|1b3b4w\n2b1b|3b4w\n1w2w3b|4w\n3w|2b1b4w\n3b2b1b|4w\n1w2w3w4w"],
     ["1w2b3w4b-b", "1w2b|3w4b\n2w|1b3w4b\n2b1b|3w4b\n1w2w3w4b|\n4w|3b2b1b\n4b3b2b1b|\n1w2w3w4w"],
     ["1b2b3w4b-a", "1b2b|3w4b g:0, h:0\n2w|1w3w4b g:2, h:2\n2b1w3w4b| g:3, h:2\n4w|3b1b2w g:7, h:4\n4b3b1b2w| g:8, h:4\n2b1w|3w4w g:12, h:2\n1b|2w3w4w g:14, h:0\n1w2w3w4w g:15, h:0"],
-    ["1w2b3w4b-a", "1w2b|3w4b g:0, h:0\n2w|1b3w4b g:2, h:2\n2b1b3w4b| g:3, h:2\n4w|3b1w2w g:7, h:4\n4b3b1w2w| g:8, h:4\n4b3b1w2w| g:8, h:4\n1w2w3w4w g:14, h:0"],
+    ["1w2b3w4b-a", "1w2b|3w4b g:0, h:0\n2w|1b3w4b g:2, h:2\n2b1b3w4b| g:3, h:2\n4w|3b1w2w g:7, h:4\n4b3b1w2w| g:8, h:4\n2b1b|3w4w g:12, h:2\n1w2w3w4w g:14, h:0"],
+
     ["1b2b3w4b-a", "1b2b|3w4b g:0, h:0\n2w|1w3w4b g:2, h:2\n2b1w3w4b| g:3, h:2\n4w|3b1b2w g:7, h:4\n4b3b1b2w| g:8, h:4\n2b1w|3w4w g:12, h:2\n1b|2w3w4w g:14, h:0\n1w2w3w4w g:15, h:0"],
     ["1b2w3b4b-a", "1b2w3b4b| g:0, h:0\n4w|3w2b1w g:4, h:4\n4b3w|2b1w g:5, h:4\n3b|4w2b1w g:7, h:4\n3w4w|2b1w g:8, h:4\n4b3b2b1w| g:10, h:4\n1b|2w3w4w g:14, h:0\n1w2w3w4w g:15, h:0"]
 ]
@@ -419,7 +420,6 @@ class StateGraph:
             ordered_nodes = self.order_nodes_by_astar_fn(
                 astar_queue)
 
-            print(len(ordered_nodes))
             # clear out already explored mins
             while ordered_nodes[0].explored or ordered_nodes[0].astar_dict_key() in explored_states:
                 ordered_nodes.pop(0)
