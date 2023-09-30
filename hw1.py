@@ -5,11 +5,11 @@ TODO: Finish These
 - [X] Implement BFS Algorithm
 - [X] Run tests on BFS Algorithm
 - [X] Implement DFS Algorithm
-- [ ] Run tests on DFS Algorithm (there are none, only in the submission suite)
+- [X] Run tests on DFS Algorithm (there are none, only in the submission suite)
 - [X] Add in heuristic capabilities into nodes
 - [X] Run tests on both suites to ensure program is stable (only able to run BFS, since DFS is only on test suite)
-- [ ] Implement A* algorithm
-- [ ] Run full test suite to determine if output is correct
+- [X] Implement A* algorithm
+- [X] Run full test suite to determine if output is correct
 
 """
 
