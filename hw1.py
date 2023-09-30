@@ -383,12 +383,10 @@ class StateGraph:
             expansion_nodes = parent_state.generate_possible_moves()
             for each_node in expansion_nodes:
                 if not each_node.explored and not str(each_node) in explored_states:
-                    each_node.explore()
                     explored_states.add(str(each_node))
                     each_node.parent = parent_state
                     bfs_queue.append(each_node)
-                else:
-                    each_node.explore()
+                each_node.explore()
         return self.root_state
 
     def astar_algorithm(self: StateGraph) -> PancakeState:
