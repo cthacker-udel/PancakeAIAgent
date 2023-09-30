@@ -17,7 +17,6 @@ from __future__ import annotations
 from typing import List, Optional, Set
 from enum import Enum
 from unittest import TestCase
-from sys import maxsize
 
 #############################
 # TEST CASES
