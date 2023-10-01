@@ -554,7 +554,7 @@ def main(run_input: bool = False):
     else:
         tester = TestCase()
         for each_test_case in test_cases:
-            print(f'\n--------- TESTING {each_test_case[0]} ---------\n')
+            print(f'\tTESTING {each_test_case[0]}')
             [pancakes, algo] = each_test_case[0].split('-')
             solver = PancakeFlippingSolver(algo, pancakes)
             last_step = solver.run_algorithm()
@@ -564,10 +564,9 @@ def main(run_input: bool = False):
                 steps = solver.stringify_steps(last_step)
             else:
                 steps = solver.stringify_astar_steps(last_step)
-            print('steps = \n', steps)
             tester.assertEqual(steps, each_test_case[1])
             print(
-                f'--------- {each_test_case[0]} PASSED ---------\n')
+                '\tPASSED\n')
 
 
 if __name__ == '__main__':
