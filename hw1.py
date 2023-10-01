@@ -17,6 +17,7 @@ from __future__ import annotations
 from typing import List, Optional, Set
 from enum import Enum
 from unittest import TestCase
+import re
 
 #############################
 # TEST CASES
@@ -202,7 +203,6 @@ class PancakeState:
         """
         cloned_state = self.clone()
         cloned_state.cost = flip_index + self.cost
-        # print('flip index = ', flip_index, self.cost, cloned_state.cost)
         cloned_state.flipped = flip_index
         flipped_part = cloned_state.pancakes[0:flip_index][::-1]
         base_part = cloned_state.pancakes[flip_index:]
@@ -297,7 +297,6 @@ class StateGraph:
             algorithm (Algorithm): The algorithm to execute with this graph
         """
         self.root_state: PancakeState = state
-        self.moves: List[StateGraph] = []
         self.algorithm = algorithm
 
     def is_goal(self: StateGraph, state: PancakeState) -> bool:
@@ -315,7 +314,7 @@ class StateGraph:
         are_pancakes_descending = sorted([x.size for x in state_pancakes]) == [
             x.size for x in state_pancakes]
         are_pancakes_burnt_sides_down = all(
-            [not x.burnt for x in state_pancakes])
+            not x.burnt for x in state_pancakes)
         return are_pancakes_burnt_sides_down and are_pancakes_descending
 
     def search_for_goal(self: StateGraph) -> PancakeState | None:
@@ -336,13 +335,15 @@ class StateGraph:
 
     def generate_tiebreaker_str(self: StateGraph, state: PancakeState) -> int:
         """
+        Generates the tiebreaker string specified in the assignment document. Replacing the `w` with 1 and the `b` with 0, and then
+        generating a numerical equivalent of the state
 
         Args:
-            self (StateGraph): _description_
-            state (PancakeState): _description_
+            self (StateGraph): The internal state graph
+            state (PancakeState): The state we are converting to it's tiebreaker string
 
         Returns:
-            str: _description_
+            int: The numerical equivalent of the tiebreaker string
         """
         return int(state.astar_dict_key().replace('|', '').replace('w', '1').replace('b', '0'))
 
@@ -434,13 +435,28 @@ class PancakeFlippingSolver:
     """
 
     def __init__(self: PancakeFlippingSolver, algorithm: str, pancake_string: str) -> None:
+        """
+        Initializes the PancakeFlippingSolver
+
+        Args:
+            self (PancakeFlippingSolver): The internal pancake flipping solver instance 
+            algorithm (str): The algorithm to execute when the solver is ran
+            pancake_string (str): The string denoting the initial order of the pancakes
+
+        Raises:
+            ValueError: If the algorithm applied is incorrect (is not able to be solved for)
+        """
         ########################
         # PARSING INPUT
         ########################
         parsed_pancakes: List[Pancake] = []
-        for i in range(0, len(pancake_string), 2):
-            parsed_pancakes.append(
-                Pancake(int(pancake_string[i]), pancake_string[i + 1].lower() == 'b'))
+        pancake_groups_pattern = re.compile('\\d+\\w')
+        found_pancakes: List[str] = pancake_groups_pattern.findall(
+            pancake_string)
+        for each_found_pancake in found_pancakes:
+            parsed_pancakes.append(Pancake(
+                int(each_found_pancake[:-1]), each_found_pancake.lower().endswith('b')))
+
         if algorithm not in available_algorithms:
             raise ValueError(
                 f"Invalid algorithm specified, only options are {','.join(list(x for x in available_algorithms))}")
@@ -481,11 +497,12 @@ class PancakeFlippingSolver:
         Stringifies all steps made in the A* process
 
         Args:
-            self (PancakeFlippingSolver): _description_
-            state (PancakeState | None): _description_
+            self (PancakeFlippingSolver): The internal pancake flipping solver instance
+            state (PancakeState | None): The state which represents the bottom of the tree (aka the final step), we then stringify it's steps by moving back up the tree
+            from the source, and stringifying (calling `str` on it) each node as we move up the tree from the solution node.
 
         Returns:
-            str: _description_
+            str: The stringified steps to achieve optimal pancake flipping
         """
         if state is None:
             return ''
